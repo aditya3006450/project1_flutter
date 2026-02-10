@@ -38,6 +38,7 @@ dependencies:
   bloc: ^9.2.0
   hive: ^2.2.3
   hive_flutter: ^1.1.0
+  dio: ^5.9.1
 
 dev_dependencies:
   flutter_test:
