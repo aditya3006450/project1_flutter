@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:project1_flutter/app/pages/live_users/live_users.dart';
+import 'package:project1_flutter/app/pages/notifications/notifications.dart';
+import 'package:project1_flutter/app/pages/request_management/request_management.dart';
 import 'package:project1_flutter/app/widgets/theme_switch.dart';
 import 'package:project1_flutter/app/widgets/floating_nav_bar.dart';
 
@@ -25,10 +28,7 @@ class _HomeState extends State<Home> {
       drawer: Drawer(),
       body: Stack(
         children: [
-          // Main content behind the nav bar
           _getPage(_selectedIndex),
-
-          // Floating nav bar at bottom
           Positioned(
             bottom: 20,
             left: 0,
@@ -48,11 +48,13 @@ class _HomeState extends State<Home> {
   Widget _getPage(int index) {
     switch (index) {
       case 0:
-        return const Center(child: Text('Home Page'));
+        return const LiveUsers();
       case 1:
         return const Center(child: Text('Search Page'));
       case 2:
-        return const Center(child: Text('Profile Page'));
+        return const Notifications();
+      case 3:
+        return const RequestManagement();
       default:
         return const Center(child: Text('Home Page'));
     }

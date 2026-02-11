@@ -1,0 +1,36 @@
+import 'package:flutter/material.dart';
+
+class LiveUsers extends StatelessWidget {
+  const LiveUsers({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: 1000),
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: GridView.extent(
+            childAspectRatio: 0.625,
+            maxCrossAxisExtent: 400,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            children: [
+              Card(child: SizedBox(width: 300, height: 480)),
+              Card(child: SizedBox(width: 300, height: 480)),
+              Card(child: SizedBox(width: 300, height: 480)),
+              Card(child: SizedBox(width: 300, height: 480)),
+              Card(child: SizedBox(width: 300, height: 480)),
+              Card(child: SizedBox(width: 300, height: 480)),
+              Card(child: SizedBox(width: 300, height: 480)),
+              Card(child: SizedBox(width: 300, height: 480)),
+              Card(child: SizedBox(width: 300, height: 480)),
+              Card(child: SizedBox(width: 300, height: 480)),
+              Card(child: SizedBox(width: 300, height: 480)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

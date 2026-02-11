@@ -23,12 +23,14 @@ class _FloatingNavBarState extends State<FloatingNavBar> {
         padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(30),
-          color: Colors.white10,
+          color: Theme.of(context).brightness == Brightness.light
+              ? Color(0xffeeeeee)
+              : Colors.black,
           border: Border.all(
             color: Theme.of(context).brightness == Brightness.light
                 ? Colors.white
                 : Colors.blueGrey,
-            width: Theme.of(context).brightness == Brightness.light ? 3 : 2,
+            width: Theme.of(context).brightness == Brightness.light ? 3 : 1,
           ),
         ),
         child: Row(
@@ -37,7 +39,8 @@ class _FloatingNavBarState extends State<FloatingNavBar> {
           children: [
             _buildNavItem(Icons.home, 0),
             _buildNavItem(Icons.search, 1),
-            _buildNavItem(Icons.person, 2),
+            _buildNavItem(Icons.notifications, 2),
+            _buildNavItem(Icons.person, 3),
           ],
         ),
       ),
