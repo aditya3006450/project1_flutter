@@ -17,7 +17,10 @@ class Login extends StatelessWidget {
     return BlocListener<LoginBloc, LoginStates>(
       listener: (context, state) {
         if (state is LoginSuccess) {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => Home()));
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => Home()),
+          );
         } else if (state is LoginFailure) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
