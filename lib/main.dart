@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:project1_flutter/app/pages/connection_management/bloc/connection_management_bloc.dart';
+import 'package:project1_flutter/app/pages/connection_management/bloc/connection_management_events.dart';
 import 'package:project1_flutter/app/pages/home/home.dart';
 import 'package:project1_flutter/app/pages/login/bloc/login_bloc.dart';
 import 'package:project1_flutter/app/pages/login/login.dart';
@@ -29,21 +31,31 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var authToken = HiveStorage().get(StorageKeys.authToken);
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider(create: (_) => SignupBloc(AuthRepository())),
-        BlocProvider(create: (_) => LoginBloc(AuthRepository())),
-        BlocProvider(create: (_) => NotificationsBloc(ConnectionRepository())),
-      ],
-      child: BlocBuilder<ThemeCubit, ThemeMode>(
-        builder: (BuildContext _, mode) => MaterialApp(
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.light,
-          darkTheme: AppTheme.dark,
-          themeMode: mode,
-          home: authToken == null || authToken.toString().isEmpty
-              ? Login()
-              : Home(),
+    return MultiRepositoryProvider(
+      providers: [RepositoryProvider(create: (_) => ConnectionRepository())],
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider(create: (_) => SignupBloc(AuthRepository())),
+          BlocProvider(create: (_) => LoginBloc(AuthRepository())),
+          BlocProvider(
+            create: (_) => NotificationsBloc(ConnectionRepository()),
+          ),
+          BlocProvider(
+            create: (context) => ConnectionManagementBloc(
+              RepositoryProvider.of<ConnectionRepository>(context),
+            )..add(LoadConnections()),
+          ),
+        ],
+        child: BlocBuilder<ThemeCubit, ThemeMode>(
+          builder: (BuildContext _, mode) => MaterialApp(
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.light,
+            darkTheme: AppTheme.dark,
+            themeMode: mode,
+            home: authToken == null || authToken.toString().isEmpty
+                ? Login()
+                : Home(),
+          ),
         ),
       ),
     );

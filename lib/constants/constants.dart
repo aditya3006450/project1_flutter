@@ -7,6 +7,11 @@ const String USER_CONNECTION_SENT_REQUESTS_URL =
     "$BASE_URL/user-connection/sent_requests";
 const String USER_CONNECTION_RECEIVED_REQUESTS_URL =
     "$BASE_URL/user-connection/recieved_requests";
-const String USER_CONNECTION_ACCEPT_URL = "$BASE_URL/user-connection/accept";
+const String USER_CONNECTION_ACCEPT_URL =
+    "$BASE_URL/user-connection/accept_request";
 const String USER_CONNECTION_SEND_REQUEST_URL =
     "$BASE_URL/user-connection/send_request";
+const String USER_CONNECTION_CONNECTED_TO_URL =
+    "$BASE_URL/user-connection/connected_to";
+const String USER_CONNECTION_CONNECTED_FROM_URL =
+    "$BASE_URL/user-connection/connected_from";

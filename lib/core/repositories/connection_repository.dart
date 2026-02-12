@@ -8,7 +8,6 @@ class ConnectionRepository {
     if (data is List) {
       return data.map((item) => Map<String, dynamic>.from(item)).toList();
     } else if (data is Map<String, dynamic>) {
-      // Check common wrapper fields
       if (data.containsKey('res') && data['res'] is List) {
         return (data['res'] as List)
             .map((item) => Map<String, dynamic>.from(item))
@@ -26,11 +25,26 @@ class ConnectionRepository {
             .map((item) => Map<String, dynamic>.from(item))
             .toList();
       } else {
-        // Single object returned, wrap in list
         return [data];
       }
     }
     return [];
+  }
+
+  Future<List<Map<String, dynamic>>> getConnectedTo() async {
+    final response = await _dio.get(USER_CONNECTION_CONNECTED_TO_URL);
+    if (response.statusCode == 200) {
+      return _parseResponse(response.data);
+    }
+    throw Exception('Failed to load connected_to: ${response.statusCode}');
+  }
+
+  Future<List<Map<String, dynamic>>> getConnectedFrom() async {
+    final response = await _dio.get(USER_CONNECTION_CONNECTED_FROM_URL);
+    if (response.statusCode == 200) {
+      return _parseResponse(response.data);
+    }
+    throw Exception('Failed to load connected_from: ${response.statusCode}');
   }
 
   Future<List<Map<String, dynamic>>> getSentRequests() async {

@@ -17,7 +17,7 @@ class DioClient {
         onRequest: (options, handler) async {
           final token = HiveStorage().get<String>(StorageKeys.authToken);
           if (token != null) {
-            options.headers['Authorization'] = token;
+            options.headers['authorization'] = token;
           }
           return handler.next(options);
         },

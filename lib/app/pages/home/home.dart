@@ -55,7 +55,7 @@ class _HomeState extends State<Home> {
       case 2:
         return const Notifications();
       case 3:
-        return const RequestManagement();
+        return const ConnectionManagement();
       default:
         return const LiveUsers();
     }
