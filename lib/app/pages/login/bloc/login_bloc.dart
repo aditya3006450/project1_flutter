@@ -27,6 +27,7 @@ class LoginBloc extends Bloc<LoginEvents, LoginStates> {
           password: _password,
         );
         HiveStorage().set(StorageKeys.authToken, token);
+        HiveStorage().set(StorageKeys.email, _email);
         emit(LoginSuccess(token));
       } catch (e) {
         emit(LoginFailure(e.toString()));
