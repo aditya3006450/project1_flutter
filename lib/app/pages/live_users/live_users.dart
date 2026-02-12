@@ -18,8 +18,8 @@ class LiveUsers extends StatelessWidget {
             mainAxisSpacing: 12,
             crossAxisSpacing: 12,
             children: [
-              ConnectCard(name: "WTF", subtitle: "WTF", onConnect: () {}),
-              ConnectCard(name: "WTF", subtitle: "WTF", onConnect: () {}),
+              ConnectCard(name: "WTF", subtitle: "WTF"),
+              ConnectCard(name: "WTF", subtitle: "WTF"),
             ],
           ),
         ),

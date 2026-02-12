@@ -3,14 +3,8 @@ import 'package:flutter/material.dart';
 class ConnectCard extends StatelessWidget {
   final String name;
   final String subtitle;
-  final VoidCallback onConnect;
 
-  const ConnectCard({
-    super.key,
-    required this.name,
-    required this.subtitle,
-    required this.onConnect,
-  });
+  const ConnectCard({super.key, required this.name, required this.subtitle});
 
   @override
   Widget build(BuildContext context) {
@@ -49,7 +43,23 @@ class ConnectCard extends StatelessWidget {
                   Card(
                     shape: const CircleBorder(),
                     child: IconButton(
-                      onPressed: onConnect,
+                      onPressed: () {
+                        showModalBottomSheet(
+                          context: context,
+                          builder: (_) {
+                            return SizedBox(
+                              height: MediaQuery.of(context).size.height / 2,
+                              width: double.infinity,
+                              child: ListView.builder(
+                                physics: ScrollPhysics(),
+                                itemCount: 50,
+                                itemBuilder: (_, idx) =>
+                                    ListTile(title: Text("$idx")),
+                              ),
+                            );
+                          },
+                        );
+                      },
                       icon: Icon(Icons.add),
                     ),
                   ),

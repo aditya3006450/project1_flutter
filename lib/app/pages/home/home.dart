@@ -26,7 +26,6 @@ class _HomeState extends State<Home> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(elevation: 0, actions: [const ThemeSwitch()]),
-      drawer: Drawer(),
       body: Stack(
         children: [
           _getPage(_selectedIndex),
