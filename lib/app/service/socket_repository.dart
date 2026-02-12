@@ -3,12 +3,12 @@ import 'package:project1_flutter/app/service/socket_handler.dart';
 import 'package:project1_flutter/app/service/socket_service.dart';
 
 class SocketRepository {
-  final SocketHandler _handler;
-  final SocketService _service;
+  static final SocketRepository _instance = SocketRepository._();
+  factory SocketRepository() => _instance;
+  SocketRepository._();
 
-  SocketRepository({SocketHandler? handler, SocketService? service})
-    : _handler = handler ?? SocketService().handler,
-      _service = service ?? SocketService();
+  final SocketHandler _handler = SocketService().handler;
+  final SocketService _service = SocketService();
 
   Stream<bool> get registrationStatus => _handler.registrationStatus;
   Stream<bool> get connectionStatus => _handler.connectionStateStatus;
@@ -24,6 +24,7 @@ class SocketRepository {
   Stream<String?> get socketId => _service.socketIdStream;
 
   bool get isConnected => _service.isConnected;
+  String? get socketIdValue => _service.socketId;
 
   void connect() {
     _service.connect();

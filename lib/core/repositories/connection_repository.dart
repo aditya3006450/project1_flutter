@@ -50,7 +50,6 @@ class ConnectionRepository {
   Future<List<Map<String, dynamic>>> getSentRequests() async {
     final response = await _dio.get(USER_CONNECTION_SENT_REQUESTS_URL);
     if (response.statusCode == 200) {
-      print(response.toString());
       return _parseResponse(response.data);
     }
     throw Exception('Failed to load sent requests: ${response.statusCode}');
@@ -79,7 +78,6 @@ class ConnectionRepository {
       USER_CONNECTION_SEND_REQUEST_URL,
       data: {'to_email': toEmail},
     );
-    print(response);
     if (response.statusCode != 200 && response.statusCode != 201) {
       throw Exception('Failed to send request: ${response.statusCode}');
     }

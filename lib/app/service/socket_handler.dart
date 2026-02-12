@@ -105,7 +105,6 @@ class SocketHandler {
       "event": event,
       "payload": payload ?? {},
     };
-
     SocketService().send(jsonEncode(message));
   }
 
@@ -117,7 +116,6 @@ class SocketHandler {
     await _initDeviceInfo();
 
     final payload = {"device_name": _deviceName, "device_type": _deviceType};
-
     send("register", payload: payload);
   }
 
@@ -202,7 +200,13 @@ class SocketHandler {
   void _handleMessage(dynamic raw) {
     try {
       final data = jsonDecode(raw);
+      if (data is! Map<String, dynamic>) {
+        return;
+      }
       final event = data["event"];
+      if (event is! String) {
+        return;
+      }
 
       switch (event) {
         case "register":
@@ -244,14 +248,17 @@ class SocketHandler {
 
   void _handleRegister(Map<String, dynamic> data) {
     final status = data["status"];
-    if (status == "ok") {
-      final sid = data["socket_id"]?.toString();
-      if (sid != null) {
-        socketId = sid;
-        socket.setSocketId(sid);
+    final bool success = status == "ok" || status == true;
+
+    final sid = data["socket_id"];
+    if (sid != null) {
+      final socketIdStr = sid.toString();
+      if (socketIdStr.isNotEmpty) {
+        socketId = socketIdStr;
+        socket.setSocketId(socketIdStr);
       }
     }
-    _registrationController.add(status == "ok");
+    _registrationController.add(success);
   }
 
   void _handleConnected(Map<String, dynamic> data) {
@@ -259,17 +266,23 @@ class SocketHandler {
   }
 
   void _handleCheck(dynamic data) {
-    if (data is List) {
-      _onlineUsers.clear();
-      for (final item in data) {
-        try {
-          _onlineUsers.add(OnlineUser.fromJson(item));
-        } catch (e) {
-          // ignore: avoid_print
-          print('Error parsing online user: $e');
+    try {
+      final usersList = data['users'];
+      if (usersList is List) {
+        _onlineUsers.clear();
+        for (final item in usersList) {
+          try {
+            if (item is Map<String, dynamic>) {
+              _onlineUsers.add(OnlineUser.fromJson(item));
+            }
+          } catch (e) {
+            print('Error parsing online user: $e');
+          }
         }
+        _devicesController.add(List.from(_onlineUsers));
       }
-      _devicesController.add(List.from(_onlineUsers));
+    } catch (e) {
+      print('Error in _handleCheck: $e');
     }
   }
 

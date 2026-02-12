@@ -122,8 +122,11 @@ class SocketService {
   }
 
   void send(dynamic data) {
-    if (_channel == null) return;
-    _channel!.sink.add(data is String ? data : jsonEncode(data));
+    if (_channel == null) {
+      return;
+    }
+    final encoded = data is String ? data : jsonEncode(data);
+    _channel!.sink.add(encoded);
   }
 
   void disconnect() {
