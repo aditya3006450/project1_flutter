@@ -3,8 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:project1_flutter/app/pages/home/home.dart';
 import 'package:project1_flutter/app/pages/login/bloc/login_bloc.dart';
 import 'package:project1_flutter/app/pages/login/login.dart';
+import 'package:project1_flutter/app/pages/notifications/bloc/notifications_bloc.dart';
 import 'package:project1_flutter/app/pages/signup/bloc/signup_bloc.dart';
 import 'package:project1_flutter/core/repositories/auth_repository.dart';
+import 'package:project1_flutter/core/repositories/connection_repository.dart';
 import 'package:project1_flutter/core/storage/hive_storage.dart';
 import 'package:project1_flutter/core/storage/storage_keys.dart';
 import 'package:project1_flutter/core/theme/app_theme.dart';
@@ -31,6 +33,7 @@ class MyApp extends StatelessWidget {
       providers: [
         BlocProvider(create: (_) => SignupBloc(AuthRepository())),
         BlocProvider(create: (_) => LoginBloc(AuthRepository())),
+        BlocProvider(create: (_) => NotificationsBloc(ConnectionRepository())),
       ],
       child: BlocBuilder<ThemeCubit, ThemeMode>(
         builder: (BuildContext _, mode) => MaterialApp(

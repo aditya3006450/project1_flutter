@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:project1_flutter/app/pages/live_users/live_users.dart';
 import 'package:project1_flutter/app/pages/notifications/notifications.dart';
-import 'package:project1_flutter/app/pages/request_management/request_management.dart';
+import 'package:project1_flutter/app/pages/connection_management/connection_management.dart';
+import 'package:project1_flutter/app/pages/search/search.dart';
 import 'package:project1_flutter/app/widgets/theme_switch.dart';
 import 'package:project1_flutter/app/widgets/floating_nav_bar.dart';
 
@@ -50,13 +51,13 @@ class _HomeState extends State<Home> {
       case 0:
         return const LiveUsers();
       case 1:
-        return const Center(child: Text('Search Page'));
+        return const Search();
       case 2:
         return const Notifications();
       case 3:
         return const RequestManagement();
       default:
-        return const Center(child: Text('Home Page'));
+        return const LiveUsers();
     }
   }
 }
