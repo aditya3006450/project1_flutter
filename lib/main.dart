@@ -7,6 +7,7 @@ import 'package:project1_flutter/app/pages/login/bloc/login_bloc.dart';
 import 'package:project1_flutter/app/pages/login/login.dart';
 import 'package:project1_flutter/app/pages/notifications/bloc/notifications_bloc.dart';
 import 'package:project1_flutter/app/pages/signup/bloc/signup_bloc.dart';
+import 'package:project1_flutter/app/service/app_messanger.dart';
 import 'package:project1_flutter/core/repositories/auth_repository.dart';
 import 'package:project1_flutter/core/repositories/connection_repository.dart';
 import 'package:project1_flutter/core/storage/hive_storage.dart';
@@ -31,6 +32,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var authToken = HiveStorage().get(StorageKeys.authToken);
+
     return MultiRepositoryProvider(
       providers: [RepositoryProvider(create: (_) => ConnectionRepository())],
       child: MultiBlocProvider(
@@ -48,6 +50,7 @@ class MyApp extends StatelessWidget {
         ],
         child: BlocBuilder<ThemeCubit, ThemeMode>(
           builder: (BuildContext _, mode) => MaterialApp(
+            scaffoldMessengerKey: AppMessenger.key,
             debugShowCheckedModeBanner: false,
             theme: AppTheme.light,
             darkTheme: AppTheme.dark,

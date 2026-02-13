@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:project1_flutter/app/service/app_messanger.dart';
 import 'package:uuid/uuid.dart';
 import 'package:project1_flutter/app/models/socket_models.dart';
 import 'package:project1_flutter/app/service/socket_service.dart';
@@ -291,6 +292,7 @@ class SocketHandler {
     if (payload != null) {
       if (payload.containsKey("request")) {
         _connectionRequestController.add(data);
+        AppMessenger.showBanner(message: "REQUESTED MESSAGE FROM $data");
       } else if (payload.containsKey("response")) {
         final accepted = payload["response"] == true;
         // ignore: avoid_print

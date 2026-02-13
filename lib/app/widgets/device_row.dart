@@ -65,11 +65,7 @@ class DeviceRow extends StatelessWidget {
             ),
           ),
           IconButton(
-            icon: Icon(
-              Icons.link,
-              size: 20,
-              color: Theme.of(context).primaryColor,
-            ),
+            icon: Icon(Icons.link, size: 20),
             onPressed: onTap,
             tooltip: 'Connect',
           ),
