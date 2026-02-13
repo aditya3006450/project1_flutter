@@ -200,13 +200,9 @@ class WebRTCService {
         return;
       }
 
-      print('WebRTC: Received answer SDP:');
-      final answerLines = sdp.split('\n');
-      for (var line in answerLines) {
-        if (line.isNotEmpty) {
-          print('WebRTC: $line');
-        }
-      }
+      print('WebRTC: ========== FULL RECEIVED ANSWER SDP START ==========');
+      print(sdp);
+      print('WebRTC: ========== FULL RECEIVED ANSWER SDP END ==========');
 
       final answer = RTCSessionDescription(sdp, type);
       await _peerConnection!.setRemoteDescription(answer);

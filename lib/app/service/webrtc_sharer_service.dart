@@ -7,6 +7,8 @@ import 'screen_capture_native_service.dart';
 class WebRTCSharerService {
   RTCPeerConnection? _peerConnection;
   MediaStream? _localStream;
+  RTCRtpTransceiver? _videoTransceiver;
+  RTCRtpTransceiver? _audioTransceiver;
   final List<RTCIceCandidate> _pendingIceCandidates = [];
   bool _isSettingUp = false;
 
@@ -44,34 +46,7 @@ class WebRTCSharerService {
       // Set up handlers
       _setupPeerConnectionHandlers();
 
-      // CRITICAL: Add transceivers BEFORE setting remote description
-      // This ensures our answer will include media lines for video/audio
-      print('WebRTCSharer: Adding transceivers before handling offer');
-      try {
-        await _peerConnection!.addTransceiver(
-          kind: RTCRtpMediaType.RTCRtpMediaTypeVideo,
-          init: RTCRtpTransceiverInit(
-            direction: TransceiverDirection.SendOnly,
-          ),
-        );
-        print('WebRTCSharer: Added video transceiver (send-only)');
-      } catch (e) {
-        print('WebRTCSharer: Could not add video transceiver: $e');
-      }
-
-      try {
-        await _peerConnection!.addTransceiver(
-          kind: RTCRtpMediaType.RTCRtpMediaTypeAudio,
-          init: RTCRtpTransceiverInit(
-            direction: TransceiverDirection.SendOnly,
-          ),
-        );
-        print('WebRTCSharer: Added audio transceiver (send-only)');
-      } catch (e) {
-        print('WebRTCSharer: Could not add audio transceiver: $e');
-      }
-
-      // Set remote description (the offer)
+      // Set remote description (the offer) FIRST
       final offer = RTCSessionDescription(sdp, type);
       await _peerConnection!.setRemoteDescription(offer);
       print('WebRTCSharer: Remote description (offer) set');
@@ -97,7 +72,7 @@ class WebRTCSharerService {
         print('WebRTCSharer: Peer connection transceivers: ${transceivers.length}');
         for (int i = 0; i < transceivers.length; i++) {
           final t = transceivers[i];
-          print('WebRTCSharer: Transceiver $i - mid: ${t.mid}, direction: ${t.direction}, sender track kind: ${t.sender.track?.kind}');
+          print('WebRTCSharer: Transceiver $i - mid: ${t.mid}, sender track kind: ${t.sender.track?.kind}');
         }
       } else {
         print('WebRTCSharer: Screen sharing disabled (data channel only mode)');
@@ -113,13 +88,9 @@ class WebRTCSharerService {
       print('WebRTCSharer: Creating answer with constraints: $answerConstraints');
       final answer = await _peerConnection!.createAnswer(answerConstraints);
       
-      print('WebRTCSharer: Answer SDP before setting local description:');
-      final sdpLines = answer.sdp?.split('\n') ?? [];
-      for (var line in sdpLines) {
-        if (line.isNotEmpty) {
-          print('WebRTCSharer: $line');
-        }
-      }
+      print('WebRTCSharer: ========== FULL ANSWER SDP START ==========');
+      print(answer.sdp ?? 'NULL SDP');
+      print('WebRTCSharer: ========== FULL ANSWER SDP END ==========');
       
       await _peerConnection!.setLocalDescription(answer);
       print('WebRTCSharer: Answer created and set as local description');
@@ -255,17 +226,17 @@ class WebRTCSharerService {
           };
         }
 
-        // Add tracks to peer connection
+        // Add tracks to peer connection via addTrack (simpler and more reliable)
         print('WebRTCSharer: Adding ${_localStream!.getTracks().length} tracks to peer connection');
-        _localStream!.getTracks().forEach((track) {
+        for (var track in _localStream!.getTracks()) {
           try {
-            final sender = _peerConnection!.addTrack(track, _localStream!);
-            print('WebRTCSharer: Successfully added ${track.kind} track to peer connection');
-            print('WebRTCSharer: Track sender: ${sender.toString()}');
+            final sender = await _peerConnection!.addTrack(track, _localStream!);
+            print('WebRTCSharer: Successfully added ${track.kind} track');
+            print('WebRTCSharer: Sender has track: ${sender.track?.kind}');
           } catch (e) {
             print('WebRTCSharer: Error adding ${track.kind} track: $e');
           }
-        });
+        }
 
         _localStreamController.add(_localStream);
         _screenShareStateController.add(true);
@@ -326,10 +297,11 @@ class WebRTCSharerService {
           };
         }
 
-        _localStream!.getTracks().forEach((track) {
+        _localStream!.getTracks().forEach((track) async {
           try {
-            final sender = _peerConnection!.addTrack(track, _localStream!);
-            print('WebRTCSharer: Successfully added ${track.kind} track to peer connection');
+            final sender = await _peerConnection!.addTrack(track, _localStream!);
+            print('WebRTCSharer: Successfully added ${track.kind} track');
+            print('WebRTCSharer: Sender has track: ${sender.track?.kind}');
           } catch (e) {
             print('WebRTCSharer: Error adding ${track.kind} track: $e');
           }
@@ -370,10 +342,11 @@ class WebRTCSharerService {
 
       // Add tracks to peer connection
       print('WebRTCSharer: Adding ${_localStream!.getTracks().length} tracks from camera to peer connection');
-      _localStream!.getTracks().forEach((track) {
+      _localStream!.getTracks().forEach((track) async {
         try {
-          final sender = _peerConnection!.addTrack(track, _localStream!);
-          print('WebRTCSharer: Successfully added ${track.kind} track from camera to peer connection');
+          final sender = await _peerConnection!.addTrack(track, _localStream!);
+          print('WebRTCSharer: Successfully added ${track.kind} track from camera');
+          print('WebRTCSharer: Sender has track: ${sender.track?.kind}');
         } catch (e) {
           print('WebRTCSharer: Error adding ${track.kind} track from camera: $e');
         }
