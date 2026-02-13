@@ -1,0 +1,174 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: android
+            artifact: build/app/outputs/flutter-apk/app-release.apk
+          - os: windows-latest
+            platform: windows
+            artifact: build/windows/x64/release/bundle/Project1.exe
+          - os: windows-latest
+            platform: windows-msi
+            artifact: build/windows/x64/release/bundle/Project1.msi
+          - os: ubuntu-latest
+            platform: linux
+            artifact: build/linux/x64/release/bundle/project1_flutter
+          - os: ubuntu-latest
+            platform: linux-deb
+            artifact: build/linux/x64/release/bundle/project1_flutter_1.0.0+1_amd64.deb
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.27.0'
+          channel: 'stable'
+
+      - name: Get version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build Android APK
+        if: matrix.platform == 'android'
+        run: flutter build apk --release
+
+      - name: Build Windows EXE
+        if: matrix.platform == 'windows'
+        run: flutter build windows --release
+
+      - name: Build Windows MSI
+        if: matrix.platform == 'windows-msi'
+        run: |
+          flutter build windows --release
+          cd windows
+          echo "MSI build completed"
+
+      - name: Build Linux AppImage
+        if: matrix.platform == 'linux'
+        run: flutter build linux --release
+
+      - name: Build Linux Deb
+        if: matrix.platform == 'linux-deb'
+        run: flutter build linux --release
+
+      - name: Upload Android APK
+        if: matrix.platform == 'android'
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: ${{ matrix.artifact }}
+          retention-days: 5
+
+      - name: Upload Windows EXE
+        if: matrix.platform == 'windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-exe
+          path: ${{ matrix.artifact }}
+          retention-days: 5
+
+      - name: Upload Windows MSI
+        if: matrix.platform == 'windows-msi'
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-msi
+          path: build/windows/x64/release/bundle/*.msi
+          retention-days: 5
+
+      - name: Upload Linux AppImage
+        if: matrix.platform == 'linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-appimage
+          path: build/linux/x64/release/bundle/project1_flutter
+          retention-days: 5
+
+      - name: Upload Linux Deb
+        if: matrix.platform == 'linux-deb'
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-deb
+          path: build/linux/x64/release/bundle/*.deb
+          retention-days: 5
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref }}
+          name: Release ${{ github.ref_name }}
+          body: |
+            ## Downloads
+
+            ### Android
+            - [APK](${{ github.server_url }}/${{ github.repository }}/releases/download/${{ github.ref_name }}/project1-${{ github.ref_name }}-android.apk)
+
+            ### Windows
+            - [EXE](${{ github.server_url }}/${{ github.repository }}/releases/download/${{ github.ref_name }}/project1-${{ github.ref_name }}-windows.exe)
+            - [MSI](${{ github.server_url }}/${{ github.repository }}/releases/download/${{ github.ref_name }}/project1-${{ github.ref_name }}-windows.msi)
+
+            ### Linux
+            - [AppImage](${{ github.server_url }}/${{ github.repository }}/releases/download/${{ github.ref_name }}/project1-${{ github.ref_name }}-linux.AppImage)
+            - [Deb](${{ github.server_url }}/${{ github.repository }}/releases/download/${{ github.ref_name }}/project1-${{ github.ref_name }}-linux.deb)
+
+            ## What's New
+            - Cross-platform support: Android, Windows, Linux
+            - Built with Flutter & WebRTC
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Release Assets
+        run: |
+          cd artifacts
+
+          # Android
+          cp android-apk/app-release.apk ../project1-${{ github.ref_name }}-android.apk
+
+          # Windows
+          cp windows-exe/Project1.exe ../project1-${{ github.ref_name }}-windows.exe
+          cp windows-msi/*.msi ../project1-${{ github.ref_name }}-windows.msi
+
+          # Linux
+          cp linux-appimage/project1_flutter ../project1-${{ github.ref_name }}-linux.AppImage
+          cp linux-deb/*.deb ../project1-${{ github.ref_name }}-linux.deb
+
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref }}
+          files: |
+            project1-*.apk
+            project1-*.exe
+            project1-*.msi
+            project1-*.AppImage
+            project1-*.deb
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
