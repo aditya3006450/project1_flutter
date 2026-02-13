@@ -5,8 +5,12 @@ class AppMessenger {
   static final GlobalKey<ScaffoldMessengerState> _key =
       GlobalKey<ScaffoldMessengerState>();
 
+  static final GlobalKey<NavigatorState> navigatorKey =
+      GlobalKey<NavigatorState>();
+
   static GlobalKey<ScaffoldMessengerState> get key => _key;
   static ScaffoldMessengerState? get _state => _key.currentState;
+  static NavigatorState? get _navigator => navigatorKey.currentState;
 
   static Timer? _bannerTimer;
 
@@ -19,10 +23,9 @@ class AppMessenger {
     Duration duration = const Duration(seconds: 30),
   }) {
     _bannerTimer?.cancel();
-
     _state?.showMaterialBanner(
       MaterialBanner(
-        content: Text(message),
+        content: Text(message, style: TextStyle(color: Colors.white)),
         leading: icon != null ? Icon(icon) : Icon(Icons.notifications),
         backgroundColor: backgroundColor ?? Colors.blueAccent,
         actions: [
@@ -39,23 +42,23 @@ class AppMessenger {
                   style: TextStyle(color: Colors.white),
                 ),
               ),
-              TextButton(
-                onPressed: () {
-                  _bannerTimer?.cancel();
-                  _state?.hideCurrentMaterialBanner();
-                  onAccept?.call();
-                },
-                child: const Text(
-                  'Accept',
-                  style: TextStyle(color: Colors.white),
+              if (onAccept != null)
+                TextButton(
+                  onPressed: () {
+                    _bannerTimer?.cancel();
+                    _state?.hideCurrentMaterialBanner();
+                    onAccept();
+                  },
+                  child: const Text(
+                    'Accept',
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
-              ),
             ],
           ),
         ],
       ),
     );
-
     _bannerTimer = Timer(duration, () {
       _state?.hideCurrentMaterialBanner();
       onDismiss?.call();
@@ -75,5 +78,13 @@ class AppMessenger {
   static void showSnackBar(String message) {
     _state?.showSnackBar(SnackBar(content: Text(message)));
   }
-}
 
+  // Navigation helper
+  static void navigateTo(Widget page) {
+    _navigator?.push(MaterialPageRoute(builder: (_) => page));
+  }
+
+  static void pop() {
+    _navigator?.pop();
+  }
+}

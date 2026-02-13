@@ -1,11 +1,15 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:project1_flutter/app/pages/canvas/canvas_screen.dart';
 import 'package:project1_flutter/app/service/app_messanger.dart';
 import 'package:uuid/uuid.dart';
 import 'package:project1_flutter/app/models/socket_models.dart';
 import 'package:project1_flutter/app/service/socket_service.dart';
+
+enum ConnectionStateEnum { idle, connecting, incomingRequest, connected }
 
 class SocketHandler {
   final SocketService socket;
@@ -50,6 +54,27 @@ class SocketHandler {
   Stream<Map<String, dynamic>> get userLeft => _userLeftController.stream;
 
   final List<OnlineUser> _onlineUsers = [];
+
+  // Connection state management
+  bool _isBusy = false;
+  String? _pendingRequestFromEmail;
+  String? _pendingRequestFromDeviceId;
+  Timer? _connectionTimer;
+  static const Duration _connectionTimeout = Duration(seconds: 60);
+
+  // Additional stream controllers
+  final _connectionResponseController =
+      StreamController<Map<String, dynamic>>.broadcast();
+  final _connectionStateController2 =
+      StreamController<ConnectionStateEnum>.broadcast();
+
+  Stream<Map<String, dynamic>> get connectionResponses =>
+      _connectionResponseController.stream;
+  Stream<ConnectionStateEnum> get connectionState =>
+      _connectionStateController2.stream;
+
+  bool get isBusy => _isBusy;
+  String? get pendingRequestFromEmail => _pendingRequestFromEmail;
 
   static final DeviceInfoPlugin _deviceInfoPlugin = DeviceInfoPlugin();
   String _deviceName = 'Unknown';
@@ -129,12 +154,18 @@ class SocketHandler {
   }
 
   void tryConnect(String targetEmail, String targetDevice) {
-    final requestId = const Uuid().v4();
+    print(
+      "trying to connect with object -======================================",
+    );
+    print("$targetEmail ,  $targetDevice");
+    print(
+      "trying to connect with object -======================================",
+    );
     send(
       "try_connect",
       toEmail: targetEmail,
       toDevice: targetDevice,
-      payload: {"request_id": requestId},
+      payload: {"request": true},
     );
   }
 
@@ -208,6 +239,9 @@ class SocketHandler {
       if (event is! String) {
         return;
       }
+      print("================== from servier ==================");
+      print(data);
+      print("================== ============ ==================");
 
       switch (event) {
         case "register":
@@ -289,15 +323,109 @@ class SocketHandler {
 
   void _handleTryConnect(Map<String, dynamic> data) {
     final payload = data["payload"];
-    if (payload != null) {
-      if (payload.containsKey("request")) {
-        _connectionRequestController.add(data);
-        AppMessenger.showBanner(message: "REQUESTED MESSAGE FROM $data");
-      } else if (payload.containsKey("response")) {
-        final accepted = payload["response"] == true;
-        // ignore: avoid_print
-        print("Connection response: $accepted");
+    if (payload == null) return;
+    if (payload.containsKey("request")) {
+      // Incoming connection request
+      final fromEmail = data["from_email"]?.toString() ?? '';
+      final fromDevice = data["from_device"]?.toString() ?? '';
+      _isBusy = true;
+      _connectionStateController2.add(ConnectionStateEnum.incomingRequest);
+
+      AppMessenger.showBanner(
+        message: "Incoming connection request from $fromEmail",
+        onAccept: () {
+          respondToConnect(fromEmail, fromDevice, true);
+          AppMessenger.navigateTo(CanvasScreen());
+        },
+        onDismiss: () {
+          respondToConnect(fromEmail, fromDevice, false);
+        },
+        backgroundColor: Colors.blue,
+      );
+    } else if (payload.containsKey("response")) {
+      final accepted = payload["response"] == true;
+      final fromEmail = data["from_email"]?.toString() ?? '';
+
+      _connectionTimer?.cancel();
+      _connectionResponseController.add({
+        "accepted": accepted,
+        "from_email": fromEmail,
+      });
+
+      if (accepted) {
+        _connectionStateController2.add(ConnectionStateEnum.connected);
+        AppMessenger.navigateTo(CanvasScreen());
+        AppMessenger.showBanner(
+          message: "Connected successfully!",
+          backgroundColor: Colors.green,
+        );
+      } else {
+        _isBusy = false;
+        _connectionStateController2.add(ConnectionStateEnum.idle);
+        AppMessenger.showBanner(
+          message: "Connection declined by $fromEmail",
+          backgroundColor: Colors.red,
+        );
       }
+    }
+  }
+
+  void initiateConnection(String targetEmail, String targetDeviceId) {
+    if (_isBusy) {
+      AppMessenger.showBanner(
+        message: "Already busy with another connection",
+        backgroundColor: Colors.orange,
+      );
+      return;
+    }
+
+    _isBusy = true;
+    _connectionStateController2.add(ConnectionStateEnum.connecting);
+    tryConnect(targetEmail, targetDeviceId);
+    _connectionTimer = Timer(_connectionTimeout, () {
+      if (_isBusy && _connectionStateController2.hasListener) {
+        _isBusy = false;
+        _connectionStateController2.add(ConnectionStateEnum.idle);
+        AppMessenger.showBanner(
+          message: "Connection timed out (60s)",
+          backgroundColor: Colors.red,
+        );
+      }
+    });
+
+    AppMessenger.showBanner(
+      message: "Connecting to $targetEmail...",
+      backgroundColor: Colors.blue,
+    );
+  }
+
+  void respondToConnectionRequest(bool accept) {
+    if (_pendingRequestFromEmail == null ||
+        _pendingRequestFromDeviceId == null) {
+      return;
+    }
+
+    respondToConnect(
+      _pendingRequestFromEmail!,
+      _pendingRequestFromDeviceId!,
+      accept,
+    );
+
+    if (accept) {
+      _connectionStateController2.add(ConnectionStateEnum.connected);
+      AppMessenger.showBanner(
+        message: "Connected successfully!",
+        backgroundColor: Colors.green,
+      );
+    } else {
+      _isBusy = false;
+      _pendingRequestFromEmail = null;
+      _pendingRequestFromDeviceId = null;
+      _connectionStateController2.add(ConnectionStateEnum.idle);
+      AppMessenger.showBanner(
+        message: "Connection declined",
+        backgroundColor: Colors.red,
+      );
     }
   }
 
@@ -334,5 +462,7 @@ class SocketHandler {
     _iceCandidateController.close();
     _targetNotFoundController.close();
     _userLeftController.close();
+    _connectionResponseController.close();
+    _connectionStateController2.close();
   }
 }

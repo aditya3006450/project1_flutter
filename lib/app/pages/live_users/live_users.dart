@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:project1_flutter/app/models/socket_models.dart';
 import 'package:project1_flutter/app/service/socket_repository.dart';
@@ -27,6 +28,11 @@ class _LiveUsersState extends State<LiveUsers> {
       }
     });
     _refresh();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
   }
 
   Future<void> _refresh() async {

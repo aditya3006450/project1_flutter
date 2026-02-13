@@ -4,11 +4,13 @@ class DeviceInfo {
   final String socketId;
   final String deviceName;
   final String deviceType;
+  final String deviceId;
 
   DeviceInfo({
     required this.socketId,
     required this.deviceName,
     required this.deviceType,
+    required this.deviceId,
   });
 
   factory DeviceInfo.fromJson(Map<String, dynamic> json) {
@@ -16,6 +18,7 @@ class DeviceInfo {
       socketId: json['socket_id']?.toString() ?? '',
       deviceName: json['device_name']?.toString() ?? '',
       deviceType: json['device_type']?.toString() ?? '',
+      deviceId: json['device_id']?.toString() ?? '',
     );
   }
 

@@ -23,8 +23,16 @@ class SocketRepository {
   Stream<bool> get connectionState => _service.connectionStatus;
   Stream<String?> get socketId => _service.socketIdStream;
 
+  // New connection-related streams
+  Stream<Map<String, dynamic>> get connectionResponses =>
+      _handler.connectionResponses;
+  Stream<ConnectionStateEnum> get connectionStateStream =>
+      _handler.connectionState;
+
   bool get isConnected => _service.isConnected;
   String? get socketIdValue => _service.socketId;
+  bool get isBusy => _handler.isBusy;
+  String? get pendingRequestFromEmail => _handler.pendingRequestFromEmail;
 
   void connect() {
     _service.connect();
@@ -49,15 +57,11 @@ class SocketRepository {
   }
 
   void initiateConnection(String targetEmail, String targetDevice) {
-    _handler.tryConnect(targetEmail, targetDevice);
+    _handler.initiateConnection(targetEmail, targetDevice);
   }
 
-  void respondToConnection(
-    String targetEmail,
-    String targetDevice,
-    bool accept,
-  ) {
-    _handler.respondToConnect(targetEmail, targetDevice, accept);
+  void respondToConnectionRequest(bool accept) {
+    _handler.respondToConnectionRequest(accept);
   }
 
   void sendSdpOffer(

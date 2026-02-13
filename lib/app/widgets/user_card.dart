@@ -58,42 +58,6 @@ class UserCard extends StatelessWidget {
                         return DeviceRow(
                           device: user.devices[index],
                           targetEmail: user.email,
-                          onTap: () {
-                            final messenger = ScaffoldMessenger.of(context);
-                            messenger.showMaterialBanner(
-                              MaterialBanner(
-                                backgroundColor: Colors.blueAccent,
-                                content: const Text(
-                                  'Connection Request sent',
-                                  style: TextStyle(color: Colors.white),
-                                ),
-                                actions: [
-                                  Row(
-                                    children: [
-                                      TextButton(
-                                        onPressed: () {
-                                          messenger.hideCurrentMaterialBanner();
-                                        },
-                                        child: const Text(
-                                          'Reject',
-                                          style: TextStyle(color: Colors.white),
-                                        ),
-                                      ),
-                                      TextButton(
-                                        onPressed: () {
-                                          messenger.hideCurrentMaterialBanner();
-                                        },
-                                        child: const Text(
-                                          'Accept',
-                                          style: TextStyle(color: Colors.white),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
                         );
                       },
                     ),

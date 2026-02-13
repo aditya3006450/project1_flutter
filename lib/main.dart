@@ -50,6 +50,7 @@ class MyApp extends StatelessWidget {
         ],
         child: BlocBuilder<ThemeCubit, ThemeMode>(
           builder: (BuildContext _, mode) => MaterialApp(
+            navigatorKey: AppMessenger.navigatorKey,
             scaffoldMessengerKey: AppMessenger.key,
             debugShowCheckedModeBanner: false,
             theme: AppTheme.light,
