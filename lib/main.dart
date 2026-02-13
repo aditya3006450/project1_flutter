@@ -8,6 +8,7 @@ import 'package:project1_flutter/app/pages/login/login.dart';
 import 'package:project1_flutter/app/pages/notifications/bloc/notifications_bloc.dart';
 import 'package:project1_flutter/app/pages/signup/bloc/signup_bloc.dart';
 import 'package:project1_flutter/app/service/app_messanger.dart';
+import 'package:project1_flutter/app/service/permission_service.dart';
 import 'package:project1_flutter/core/repositories/auth_repository.dart';
 import 'package:project1_flutter/core/repositories/connection_repository.dart';
 import 'package:project1_flutter/core/storage/hive_storage.dart';
@@ -56,12 +57,45 @@ class MyApp extends StatelessWidget {
             theme: AppTheme.light,
             darkTheme: AppTheme.dark,
             themeMode: mode,
-            home: authToken == null || authToken.toString().isEmpty
-                ? Login()
-                : Home(),
+            home: PermissionWrapper(
+              child: authToken == null || authToken.toString().isEmpty
+                  ? Login()
+                  : Home(),
+            ),
           ),
         ),
       ),
     );
+  }
+}
+
+/// Wrapper widget to request permissions after MaterialApp is initialized
+class PermissionWrapper extends StatefulWidget {
+  final Widget child;
+  const PermissionWrapper({super.key, required this.child});
+
+  @override
+  State<PermissionWrapper> createState() => _PermissionWrapperState();
+}
+
+class _PermissionWrapperState extends State<PermissionWrapper> {
+  final PermissionService _permissionService = PermissionService();
+  bool _permissionsRequested = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Request permissions after first frame when MaterialApp is ready
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_permissionsRequested) {
+        _permissionsRequested = true;
+        _permissionService.requestPermissions(context);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return widget.child;
   }
 }

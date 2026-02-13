@@ -5,9 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:project1_flutter/app/pages/canvas/canvas_screen.dart';
 import 'package:project1_flutter/app/service/app_messanger.dart';
-import 'package:uuid/uuid.dart';
 import 'package:project1_flutter/app/models/socket_models.dart';
 import 'package:project1_flutter/app/service/socket_service.dart';
+import 'package:project1_flutter/app/service/webrtc_sharer_service.dart';
 
 enum ConnectionStateEnum { idle, connecting, incomingRequest, connected }
 
@@ -61,6 +61,13 @@ class SocketHandler {
   String? _pendingRequestFromDeviceId;
   Timer? _connectionTimer;
   static const Duration _connectionTimeout = Duration(seconds: 60);
+
+  // WebRTC sharer service (for handling incoming offers as sharer)
+  final WebRTCSharerService _sharerService = WebRTCSharerService();
+  StreamSubscription? _sharerIceCandidateSubscription;
+  StreamSubscription? _sharerScreenShareSubscription;
+  String? _sharerConnectedToEmail;
+  String? _sharerConnectedToDevice;
 
   // Additional stream controllers
   final _connectionResponseController =
@@ -251,12 +258,20 @@ class SocketHandler {
           break;
         case "sdp_offer":
           _sdpOfferController.add(data);
+          // Handle as sharer if we have a pending request (we're the receiver)
+          if (_pendingRequestFromEmail != null) {
+            _handleOfferAsSharer(data);
+          }
           break;
         case "sdp_answer":
           _sdpAnswerController.add(data);
           break;
         case "ice_candidate":
           _iceCandidateController.add(data);
+          // Handle as sharer if we have a pending request
+          if (_pendingRequestFromEmail != null) {
+            _handleIceCandidateAsSharer(data);
+          }
           break;
         case "target_not_found":
           _handleTargetNotFound(data);
@@ -321,6 +336,16 @@ class SocketHandler {
       // Incoming connection request
       final fromEmail = data["from_email"]?.toString() ?? '';
       final fromDevice = data["from_device"]?.toString() ?? '';
+
+      // Store pending request info so we know we're the receiver
+      _pendingRequestFromEmail = fromEmail;
+      _pendingRequestFromDeviceId = fromDevice;
+
+      print('SocketHandler: Received connection request from $fromEmail');
+      print(
+        'SocketHandler: _pendingRequestFromEmail set to: $_pendingRequestFromEmail',
+      );
+
       _isBusy = true;
       _connectionStateController2.add(ConnectionStateEnum.incomingRequest);
 
@@ -340,6 +365,15 @@ class SocketHandler {
     } else if (payload.containsKey("response")) {
       final accepted = payload["response"] == true;
       final fromEmail = data["from_email"]?.toString() ?? '';
+      final fromDevice = data["from_device"]?.toString() ?? '';
+
+      print(
+        'SocketHandler: Received response from $fromEmail, accepted: $accepted',
+      );
+      print(
+        'SocketHandler: _pendingRequestFromEmail is: $_pendingRequestFromEmail',
+      );
+      print('SocketHandler: currentEmail is: $currentEmail');
 
       _connectionTimer?.cancel();
       _connectionResponseController.add({
@@ -349,12 +383,33 @@ class SocketHandler {
 
       if (accepted) {
         _connectionStateController2.add(ConnectionStateEnum.connected);
-        AppMessenger.navigateTo(
-          CanvasScreen(
-            fromDevice: data["from_device"],
-            fromEmail: data["from_email"],
-          ),
-        );
+
+        // Only open CanvasScreen if we are the initiator (we sent the request)
+        // The initiator has _pendingRequestFromEmail set to null
+        // The receiver has _pendingRequestFromEmail set to the sender's email
+        if (_pendingRequestFromEmail == null) {
+          // We are the initiator - open CanvasScreen
+          print('SocketHandler: I am initiator - opening CanvasScreen');
+          AppMessenger.navigateTo(
+            CanvasScreen(
+              fromDevice: currentDeviceId ?? '',
+              fromEmail: currentEmail ?? '',
+              toDevice: fromDevice,
+              toEmail: fromEmail,
+            ),
+          );
+        } else {
+          // We are the receiver - just show success message
+          // The initiator will open CanvasScreen
+          print('SocketHandler: I am receiver - NOT opening CanvasScreen');
+          _isBusy = false;
+          _connectionStateController2.add(ConnectionStateEnum.idle);
+        }
+
+        // Clear pending request state
+        _pendingRequestFromEmail = null;
+        _pendingRequestFromDeviceId = null;
+
         AppMessenger.showBanner(
           message: "Connected successfully!",
           backgroundColor: Colors.green,
@@ -451,8 +506,118 @@ class SocketHandler {
     print('Socket error: ${data["error"]}');
   }
 
+  /// Handle SDP offer as sharer (receiver) and send answer back
+  Future<void> _handleOfferAsSharer(Map<String, dynamic> data) async {
+    try {
+      print('SocketHandler: Handling SDP offer as sharer');
+
+      final fromEmail = data['from_email']?.toString();
+      final fromDevice = data['from_device']?.toString();
+      final payload = data['payload'];
+
+      if (payload == null) return;
+
+      final sdp = payload['sdp']?.toString();
+      final type = payload['type']?.toString();
+
+      if (sdp == null || type == null) {
+        print('SocketHandler: Invalid SDP offer payload');
+        return;
+      }
+
+      // Store viewer info for ICE candidate routing
+      _sharerConnectedToEmail = fromEmail;
+      _sharerConnectedToDevice = fromDevice;
+
+      // Subscribe to ICE candidates from sharer service
+      _sharerIceCandidateSubscription?.cancel();
+      _sharerIceCandidateSubscription = _sharerService.iceCandidates.listen((
+        candidate,
+      ) {
+        if (_sharerConnectedToEmail != null &&
+            _sharerConnectedToDevice != null) {
+          sendIceCandidate(
+            _sharerConnectedToEmail!,
+            _sharerConnectedToDevice!,
+            candidate.candidate!,
+            candidate.sdpMid!,
+            candidate.sdpMLineIndex!,
+          );
+          print(
+            'SocketHandler: Sent ICE candidate to $_sharerConnectedToEmail',
+          );
+        }
+      });
+
+      // Subscribe to screen share state changes
+      _sharerScreenShareSubscription?.cancel();
+      _sharerScreenShareSubscription = _sharerService.screenShareState.listen((
+        isSharing,
+      ) {
+        if (isSharing) {
+          print('SocketHandler: Screen sharing started successfully');
+          AppMessenger.showBanner(
+            message: "Screen sharing active - your screen is being viewed",
+            backgroundColor: Colors.green,
+          );
+        } else {
+          print('SocketHandler: Screen sharing failed or stopped');
+          AppMessenger.showBanner(
+            message: "Screen sharing not active - only data channel connected",
+            backgroundColor: Colors.orange,
+          );
+        }
+      });
+
+      // Use sharer service to handle the offer and create answer
+      // Screen sharing enabled - mobile will share its screen with desktop
+      final answer = await _sharerService.handleOffer(
+        sdp,
+        type,
+        enableScreenShare: true,
+      );
+
+      if (answer != null) {
+        // Send answer back to viewer
+        sendSdpAnswer(fromEmail!, fromDevice!, answer.sdp!, answer.type!);
+        print('SocketHandler: SDP answer sent to $fromEmail');
+      } else {
+        print('SocketHandler: Failed to create answer');
+      }
+    } catch (e) {
+      print('SocketHandler: Error handling offer as sharer: $e');
+    }
+  }
+
+  /// Handle ICE candidate as sharer
+  void _handleIceCandidateAsSharer(Map<String, dynamic> data) {
+    try {
+      final payload = data['payload'];
+      if (payload == null) return;
+
+      final candidate = payload['candidate']?.toString();
+      final sdpMid = payload['sdpMid']?.toString();
+      final sdpMLineIndex = payload['sdpMLineIndex'];
+
+      if (candidate != null && sdpMid != null && sdpMLineIndex != null) {
+        _sharerService.addIceCandidate(
+          candidate,
+          sdpMid,
+          sdpMLineIndex is int
+              ? sdpMLineIndex
+              : int.tryParse(sdpMLineIndex.toString()) ?? 0,
+        );
+      }
+    } catch (e) {
+      print('SocketHandler: Error handling ICE candidate as sharer: $e');
+    }
+  }
+
   void dispose() {
     _sub?.cancel();
+    _sharerIceCandidateSubscription?.cancel();
+    _sharerScreenShareSubscription?.cancel();
+    _sharerService.dispose();
     _registrationController.close();
     _connectionStateController.close();
     _devicesController.close();
