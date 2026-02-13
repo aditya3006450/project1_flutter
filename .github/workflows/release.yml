@@ -16,10 +16,7 @@ jobs:
             artifact: build/app/outputs/flutter-apk/app-release.apk
           - os: windows-latest
             platform: windows
-            artifact: build/windows/x64/release/bundle/Project1.exe
-          - os: windows-latest
-            platform: windows-msi
-            artifact: build/windows/x64/release/bundle/Project1.msi
+            artifact: build/windows/x64/runner/Release/project1_flutter.exe
           - os: ubuntu-latest
             platform: linux
             artifact: build/linux/x64/release/bundle/project1_flutter
@@ -57,13 +54,6 @@ jobs:
         if: matrix.platform == 'windows'
         run: flutter build windows --release
 
-      - name: Build Windows MSI
-        if: matrix.platform == 'windows-msi'
-        run: |
-          flutter build windows --release
-          cd windows
-          echo "MSI build completed"
-
       - name: Build Linux AppImage
         if: matrix.platform == 'linux'
         run: flutter build linux --release
@@ -86,14 +76,6 @@ jobs:
         with:
           name: windows-exe
           path: ${{ matrix.artifact }}
-          retention-days: 5
-
-      - name: Upload Windows MSI
-        if: matrix.platform == 'windows-msi'
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-msi
-          path: build/windows/x64/release/bundle/*.msi
           retention-days: 5
 
       - name: Upload Linux AppImage
@@ -137,7 +119,6 @@ jobs:
 
             ### Windows
             - [EXE](${{ github.server_url }}/${{ github.repository }}/releases/download/${{ github.ref_name }}/project1-${{ github.ref_name }}-windows.exe)
-            - [MSI](${{ github.server_url }}/${{ github.repository }}/releases/download/${{ github.ref_name }}/project1-${{ github.ref_name }}-windows.msi)
 
             ### Linux
             - [AppImage](${{ github.server_url }}/${{ github.repository }}/releases/download/${{ github.ref_name }}/project1-${{ github.ref_name }}-linux.AppImage)
@@ -159,8 +140,7 @@ jobs:
           cp android-apk/app-release.apk ../project1-${{ github.ref_name }}-android.apk
 
           # Windows
-          cp windows-exe/Project1.exe ../project1-${{ github.ref_name }}-windows.exe
-          cp windows-msi/*.msi ../project1-${{ github.ref_name }}-windows.msi
+          cp windows-exe/project1_flutter.exe ../project1-${{ github.ref_name }}-windows.exe
 
           # Linux
           cp linux-appimage/project1_flutter ../project1-${{ github.ref_name }}-linux.AppImage
@@ -173,7 +153,6 @@ jobs:
           files: |
             project1-*.apk
             project1-*.exe
-            project1-*.msi
             project1-*.AppImage
             project1-*.deb
         env:
