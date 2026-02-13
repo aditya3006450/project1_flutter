@@ -154,13 +154,6 @@ class SocketHandler {
   }
 
   void tryConnect(String targetEmail, String targetDevice) {
-    print(
-      "trying to connect with object -======================================",
-    );
-    print("$targetEmail ,  $targetDevice");
-    print(
-      "trying to connect with object -======================================",
-    );
     send(
       "try_connect",
       toEmail: targetEmail,
@@ -335,7 +328,9 @@ class SocketHandler {
         message: "Incoming connection request from $fromEmail",
         onAccept: () {
           respondToConnect(fromEmail, fromDevice, true);
-          AppMessenger.navigateTo(CanvasScreen());
+          AppMessenger.showBanner(
+            message: "$fromEmail will soon be able to use your pc now",
+          );
         },
         onDismiss: () {
           respondToConnect(fromEmail, fromDevice, false);
@@ -354,7 +349,12 @@ class SocketHandler {
 
       if (accepted) {
         _connectionStateController2.add(ConnectionStateEnum.connected);
-        AppMessenger.navigateTo(CanvasScreen());
+        AppMessenger.navigateTo(
+          CanvasScreen(
+            fromDevice: data["from_device"],
+            fromEmail: data["from_email"],
+          ),
+        );
         AppMessenger.showBanner(
           message: "Connected successfully!",
           backgroundColor: Colors.green,

@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 
 class CanvasScreen extends StatelessWidget {
-  const CanvasScreen({super.key});
+  const CanvasScreen({
+    super.key,
+    required this.fromDevice,
+    required this.fromEmail,
+  });
+  final String fromDevice;
+  final String fromEmail;
 
   @override
   Widget build(BuildContext context) {
@@ -13,7 +19,7 @@ class CanvasScreen extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: const Center(
+      body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -25,7 +31,7 @@ class CanvasScreen extends StatelessWidget {
             ),
             SizedBox(height: 8),
             Text(
-              'You can now start sharing',
+              'You can now start sharing \n device: $fromDevice email: $fromEmail',
               style: TextStyle(fontSize: 16, color: Colors.grey),
             ),
           ],
