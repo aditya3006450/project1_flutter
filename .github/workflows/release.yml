@@ -46,10 +46,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libstdc++-12-dev
 
-      - name: Install fpm
-        if: matrix.platform == 'linux-deb'
-        run: gem install fpm
-
       - name: Build Android APK
         if: matrix.platform == 'android'
         run: flutter build apk --release
@@ -66,14 +62,26 @@ jobs:
         if: matrix.platform == 'linux-deb'
         run: |
           flutter build linux --release
-
-          fpm -t deb -s dir \
-            --name project1-flutter \
-            --version ${{ steps.version.outputs.VERSION }} \
-            --architecture amd64 \
-            -p build/linux-deb/project1-flutter_${{ steps.version.outputs.VERSION }}_amd64.deb \
-            -C build/linux/x64/release/bundle \
-            .
+          
+          mkdir -p build/linux-deb/DEBIAN
+          mkdir -p build/linux-deb/usr/local/bin/project1_flutter
+          
+          cp -r build/linux/x64/release/bundle/* build/linux-deb/usr/local/bin/project1_flutter/
+          
+          cat > build/linux-deb/DEBIAN/control << EOF
+          Package: project1-flutter
+          Version: ${{ steps.version.outputs.VERSION }}
+          Section: utils
+          Priority: optional
+          Architecture: amd64
+          Depends: libc6, libgtk-3-0
+          Maintainer: Your Name
+          Description: project1 Flutter Application
+          EOF
+          
+          chmod -R 755 build/linux-deb/usr
+          
+          dpkg-deb --build build/linux-deb build/linux-deb/project1-flutter_${{ steps.version.outputs.VERSION }}_amd64.deb
 
       - name: Upload Android APK
         if: matrix.platform == 'android'
